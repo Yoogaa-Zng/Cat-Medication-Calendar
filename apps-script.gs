@@ -91,15 +91,20 @@ function getSheet() {
   return sheet;
 }
 
-// Sheets 會把 YYYY-MM-DD 自動轉成 Date 物件，這裡統一轉回字串
+// Sheets 會把 YYYY-MM-DD 自動轉成 Date 物件，統一用試算表時區轉回字串
 function formatDate(val) {
   if (val instanceof Date) {
-    var y = val.getFullYear();
-    var m = String(val.getMonth() + 1).padStart(2, '0');
-    var d = String(val.getDate()).padStart(2, '0');
-    return y + '-' + m + '-' + d;
+    return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
   }
-  return String(val || '').trim();
+  var s = String(val || '').trim();
+  // 處理舊格式字串（如 "Sat May 22 2026 ..."）
+  if (s && !/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    var d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    }
+  }
+  return s;
 }
 
 function toBool(v) {

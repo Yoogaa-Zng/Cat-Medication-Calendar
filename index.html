@@ -618,11 +618,9 @@ async function syncAll() {
   try {
     // 使用 JSONP 確保手機瀏覽器也能跨域讀取
     var data = await jsonpFetch(scriptUrl + '?action=getAll');
-    // Merge strategy: true wins (don't erase a "given" record)
+    // 以 server 為準：取消掉就是取消掉，不強迫 true 勝出
     for (var k in data) {
-      if (!records[k]) records[k] = { am: false, pm: false };
-      records[k].am = records[k].am || !!data[k].am;
-      records[k].pm = records[k].pm || !!data[k].pm;
+      records[k] = { am: !!data[k].am, pm: !!data[k].pm };
     }
     saveLocal();
     render();

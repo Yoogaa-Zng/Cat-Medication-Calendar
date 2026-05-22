@@ -580,13 +580,44 @@ function spinning(on) {
   else    btn.classList.remove('spinning');
 }
 
+// JSONP 方式讀取資料，解決手機瀏覽器（尤其 iOS Safari）的 CORS 限制
+function jsonpFetch(url) {
+  return new Promise(function(resolve, reject) {
+    var cbName = '_catcb' + Date.now() + Math.floor(Math.random() * 9999);
+    var script = document.createElement('script');
+    var timer = setTimeout(function() {
+      cleanup();
+      reject(new Error('timeout'));
+    }, 15000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = function(data) {
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = function() {
+      cleanup();
+      reject(new Error('script load error'));
+    };
+
+    script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName;
+    document.head.appendChild(script);
+  });
+}
+
 async function syncAll() {
   if (!scriptUrl) { setStatus('尚未設定同步網址'); return; }
   spinning(true);
   setStatus('同步中…');
   try {
-    var res  = await fetch(scriptUrl + '?action=getAll', { cache: 'no-store' });
-    var data = await res.json();
+    // 使用 JSONP 確保手機瀏覽器也能跨域讀取
+    var data = await jsonpFetch(scriptUrl + '?action=getAll');
     // Merge strategy: true wins (don't erase a "given" record)
     for (var k in data) {
       if (!records[k]) records[k] = { am: false, pm: false };
@@ -605,9 +636,10 @@ async function syncAll() {
 
 async function pushToggle(key, period, value) {
   try {
+    // mode: 'no-cors' 讓手機瀏覽器可以送出跨域請求（不需要讀回應）
     await fetch(
       scriptUrl + '?action=set&date=' + key + '&period=' + period + '&value=' + (value ? '1' : '0'),
-      { cache: 'no-store' }
+      { mode: 'no-cors', cache: 'no-store' }
     );
     var t = new Date();
     setStatus('已同步  ' + pad(t.getHours()) + ':' + pad(t.getMinutes()));

@@ -3,22 +3,36 @@
 // 執行身分：我，存取權：所有人
 
 function doGet(e) {
-  var action = e.parameter.action;
+  var action   = e.parameter.action;
+  var callback = e.parameter.callback; // JSONP 支援（手機瀏覽器用）
+  var data;
+
   try {
-    if (action === 'getAll') return getAllRecords();
-    if (action === 'set')    return setRecord(
+    if (action === 'getAll') data = getAllRecordsData();
+    else if (action === 'set') data = setRecordData(
       e.parameter.date,
       e.parameter.period,
       e.parameter.value === '1'
     );
+    else data = { error: 'Unknown action' };
   } catch (err) {
-    return respond({ error: err.toString() });
+    data = { error: err.toString() };
   }
-  return respond({ error: 'Unknown action' });
+
+  var json = JSON.stringify(data);
+  if (callback) {
+    // JSONP：包在 callback 函式內，讓手機瀏覽器可跨域讀取
+    return ContentService
+      .createTextOutput(callback + '(' + json + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService
+    .createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
-// 取得所有記錄
-function getAllRecords() {
+// 取得所有記錄（回傳資料物件）
+function getAllRecordsData() {
   var sheet = getSheet();
   var rows  = sheet.getDataRange().getValues();
   var out   = {};
@@ -31,15 +45,15 @@ function getAllRecords() {
       pm: toBool(rows[i][2])
     };
   }
-  return respond(out);
+  return out;
 }
 
-// 寫入或更新一筆記錄
-function setRecord(date, period, value) {
-  if (!date || !period) return respond({ error: 'Missing params' });
+// 寫入或更新一筆記錄（回傳資料物件）
+function setRecordData(date, period, value) {
+  if (!date || !period) return { error: 'Missing params' };
 
-  var sheet = getSheet();
-  var rows  = sheet.getDataRange().getValues();
+  var sheet  = getSheet();
+  var rows   = sheet.getDataRange().getValues();
   var rowIdx = -1;
 
   for (var i = 1; i < rows.length; i++) {
@@ -58,7 +72,7 @@ function setRecord(date, period, value) {
     sheet.getRange(rowIdx, period === 'am' ? 2 : 3).setValue(value);
   }
 
-  return respond({ ok: true });
+  return { ok: true };
 }
 
 // ── 工具函式 ──────────────────────────────────────────────────────────────────
@@ -70,7 +84,6 @@ function getSheet() {
     sheet = ss.insertSheet('MedLog');
     sheet.appendRow(['date', 'am', 'pm']);
     sheet.setFrozenRows(1);
-    // 設欄寬讓資料更易讀
     sheet.setColumnWidth(1, 120);
     sheet.setColumnWidth(2, 80);
     sheet.setColumnWidth(3, 80);
@@ -80,10 +93,4 @@ function getSheet() {
 
 function toBool(v) {
   return v === true || v === 'TRUE' || v === 1 || v === '1';
-}
-
-function respond(data) {
-  return ContentService
-    .createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
 }

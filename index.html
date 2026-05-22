@@ -635,17 +635,20 @@ async function syncAll() {
 }
 
 async function pushToggle(key, period, value) {
-  try {
-    // mode: 'no-cors' 讓手機瀏覽器可以送出跨域請求（不需要讀回應）
-    await fetch(
-      scriptUrl + '?action=set&date=' + key + '&period=' + period + '&value=' + (value ? '1' : '0'),
-      { mode: 'no-cors', cache: 'no-store' }
-    );
-    var t = new Date();
-    setStatus('已同步  ' + pad(t.getHours()) + ':' + pad(t.getMinutes()));
-  } catch(e) {
-    setStatus('同步失敗');
+  var url = scriptUrl + '?action=set&date=' + key + '&period=' + period + '&value=' + (value ? '1' : '0');
+  var attempts = 3;
+  for (var i = 0; i < attempts; i++) {
+    try {
+      var res = await jsonpFetch(url);
+      if (res && res.ok) {
+        var t = new Date();
+        setStatus('已同步  ' + pad(t.getHours()) + ':' + pad(t.getMinutes()));
+        return;
+      }
+    } catch(e) {}
+    if (i < attempts - 1) await new Promise(function(r){ setTimeout(r, 1500); });
   }
+  setStatus('寫入失敗，請按重新整理');
 }
 
 // ── Setup sheet ───────────────────────────────────────────────────────────────
@@ -706,6 +709,11 @@ function saveSetup() {
     setStatus('連線中…');
     syncAll();
   }
+
+  // 切回 app 時自動同步
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && scriptUrl) syncAll();
+  });
 })();
 </script>
 </body>

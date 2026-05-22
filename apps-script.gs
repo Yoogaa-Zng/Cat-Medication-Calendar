@@ -38,7 +38,7 @@ function getAllRecordsData() {
   var out   = {};
 
   for (var i = 1; i < rows.length; i++) {
-    var date = String(rows[i][0] || '').trim();
+    var date = formatDate(rows[i][0]);
     if (!date) continue;
     out[date] = {
       am: toBool(rows[i][1]),
@@ -57,7 +57,7 @@ function setRecordData(date, period, value) {
   var rowIdx = -1;
 
   for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]).trim() === date) {
+    if (formatDate(rows[i][0]) === date) {
       rowIdx = i + 1; // Sheets 從 1 起算
       break;
     }
@@ -89,6 +89,17 @@ function getSheet() {
     sheet.setColumnWidth(3, 80);
   }
   return sheet;
+}
+
+// Sheets 會把 YYYY-MM-DD 自動轉成 Date 物件，這裡統一轉回字串
+function formatDate(val) {
+  if (val instanceof Date) {
+    var y = val.getFullYear();
+    var m = String(val.getMonth() + 1).padStart(2, '0');
+    var d = String(val.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
+  }
+  return String(val || '').trim();
 }
 
 function toBool(v) {

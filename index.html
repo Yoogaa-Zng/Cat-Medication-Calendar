@@ -616,11 +616,26 @@ async function syncAll() {
   spinning(true);
   setStatus('同步中…');
   try {
-    // 使用 JSONP 確保手機瀏覽器也能跨域讀取
-    var data = await jsonpFetch(scriptUrl + '?action=getAll');
-    // 以 server 為準：取消掉就是取消掉，不強迫 true 勝出
-    for (var k in data) {
-      records[k] = { am: !!data[k].am, pm: !!data[k].pm };
+    var serverData = await jsonpFetch(scriptUrl + '?action=getAll');
+
+    // 第一次同步：server 是空的但本地有資料 → 把本地資料推上去
+    var serverEmpty = Object.keys(serverData).length === 0;
+    var localKeys = Object.keys(records);
+    if (serverEmpty && localKeys.length > 0) {
+      setStatus('上傳本地資料…');
+      for (var i = 0; i < localKeys.length; i++) {
+        var k = localKeys[i];
+        var rec = records[k];
+        if (rec.am) await pushOne(k, 'am', true);
+        if (rec.pm) await pushOne(k, 'pm', true);
+      }
+      serverData = await jsonpFetch(scriptUrl + '?action=getAll');
+    }
+
+    // 完全以 server 為準，本地全部替換
+    records = {};
+    for (var key in serverData) {
+      records[key] = { am: !!serverData[key].am, pm: !!serverData[key].pm };
     }
     saveLocal();
     render();
@@ -630,6 +645,13 @@ async function syncAll() {
     setStatus('同步失敗（使用本地資料）');
   }
   spinning(false);
+}
+
+async function pushOne(key, period, value) {
+  var url = scriptUrl + '?action=set&date=' + key + '&period=' + period + '&value=' + (value ? '1' : '0');
+  try {
+    await jsonpFetch(url);
+  } catch(e) {}
 }
 
 async function pushToggle(key, period, value) {
@@ -646,7 +668,11 @@ async function pushToggle(key, period, value) {
     } catch(e) {}
     if (i < attempts - 1) await new Promise(function(r){ setTimeout(r, 1500); });
   }
-  setStatus('寫入失敗，請按重新整理');
+  // 3 次都失敗 → 還原本地狀態，避免跟 server 不一致
+  if (records[key]) records[key][period] = !value;
+  saveLocal();
+  render();
+  setStatus('寫入失敗，請重試');
 }
 
 // ── Setup sheet ───────────────────────────────────────────────────────────────

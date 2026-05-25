@@ -31,6 +31,15 @@ function doGet(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// 各欄位對應欄號
+function colForPeriod(period) {
+  if (period === 'am')    return 2;
+  if (period === 'pm')    return 3;
+  if (period === 'vomit') return 4;
+  if (period === 'pant')  return 5;
+  return -1;
+}
+
 // 取得所有記錄（回傳資料物件）
 function getAllRecordsData() {
   var sheet = getSheet();
@@ -41,8 +50,10 @@ function getAllRecordsData() {
     var date = formatDate(rows[i][0]);
     if (!date) continue;
     out[date] = {
-      am: toBool(rows[i][1]),
-      pm: toBool(rows[i][2])
+      am:    toBool(rows[i][1]),
+      pm:    toBool(rows[i][2]),
+      vomit: rows[i].length > 3 ? toBool(rows[i][3]) : false,
+      pant:  rows[i].length > 4 ? toBool(rows[i][4]) : false
     };
   }
   return out;
@@ -51,6 +62,8 @@ function getAllRecordsData() {
 // 寫入或更新一筆記錄（回傳資料物件）
 function setRecordData(date, period, value) {
   if (!date || !period) return { error: 'Missing params' };
+  var col = colForPeriod(period);
+  if (col === -1) return { error: 'Unknown period: ' + period };
 
   var sheet  = getSheet();
   var rows   = sheet.getDataRange().getValues();
@@ -64,12 +77,11 @@ function setRecordData(date, period, value) {
   }
 
   if (rowIdx === -1) {
-    var newRow = [date, false, false];
-    if (period === 'am') newRow[1] = value;
-    else                 newRow[2] = value;
+    var newRow = [date, false, false, false, false];
+    newRow[col - 1] = value;
     sheet.appendRow(newRow);
   } else {
-    sheet.getRange(rowIdx, period === 'am' ? 2 : 3).setValue(value);
+    sheet.getRange(rowIdx, col).setValue(value);
   }
 
   return { ok: true };
@@ -82,11 +94,18 @@ function getSheet() {
   var sheet = ss.getSheetByName('MedLog');
   if (!sheet) {
     sheet = ss.insertSheet('MedLog');
-    sheet.appendRow(['date', 'am', 'pm']);
+    sheet.appendRow(['date', 'am', 'pm', 'vomit', 'pant']);
     sheet.setFrozenRows(1);
     sheet.setColumnWidth(1, 120);
-    sheet.setColumnWidth(2, 80);
-    sheet.setColumnWidth(3, 80);
+    sheet.setColumnWidth(2, 70);
+    sheet.setColumnWidth(3, 70);
+    sheet.setColumnWidth(4, 70);
+    sheet.setColumnWidth(5, 70);
+  } else {
+    // 舊 Sheet 自動補上 vomit / pant 標題欄
+    var lastCol = sheet.getLastColumn();
+    if (lastCol < 4) sheet.getRange(1, 4).setValue('vomit');
+    if (lastCol < 5) sheet.getRange(1, 5).setValue('pant');
   }
   return sheet;
 }

@@ -121,7 +121,7 @@
       flex-direction: column;
       align-items: center;
       gap: 2px;
-      min-height: 70px;
+      min-height: 96px;
       transition: border-color 0.15s;
     }
     .cell:hover { border-color: #CCC9C4; }
@@ -169,9 +169,42 @@
 
     .cat-icon { display: block; width: 24px; height: 24px; }
 
+    /* ── Symptom dots ── */
+    .syms {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .sym-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 1px;
+      border-radius: 4px;
+      line-height: 0;
+      transition: transform 0.12s;
+    }
+    .sym-btn:hover  { transform: scale(1.2); }
+    .sym-btn:active { transform: scale(0.85); }
+
+    .sym-dot {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--undone);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8.5px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.75);
+      transition: background 0.15s;
+    }
+    .sym-vomit { background: #D96B5A; color: white; }
+    .sym-pant  { background: #5BADB0; color: white; }
+
     @media (max-width: 360px) {
       .cat-icon { width: 20px; height: 20px; }
-      .cell { min-height: 62px; gap: 1px; }
+      .cell { min-height: 84px; gap: 1px; }
+      .sym-dot { width: 18px; height: 18px; font-size: 7px; }
     }
 
     /* ── Legend ── */
@@ -527,9 +560,11 @@ function render() {
 
   for (var d = 1; d <= days; d++) {
     var key  = toKey(curYear, curMonth, d);
-    var rec  = records[key] || {};
-    var amOk = !!rec.am;
-    var pmOk = !!rec.pm;
+    var rec     = records[key] || {};
+    var amOk    = !!rec.am;
+    var pmOk    = !!rec.pm;
+    var vomitOk = !!rec.vomit;
+    var pantOk  = !!rec.pant;
     var cls  = 'cell' + (key === today ? ' is-today' : '');
 
     html += '<div class="' + cls + '">';
@@ -537,7 +572,12 @@ function render() {
     html += '<div class="cats">';
     html += '<button class="cat-btn" onclick="toggle(\'' + key + '\',\'am\')" title="早上餵藥">' + catSVG(amOk ? C_AM : C_UNDONE) + '</button>';
     html += '<button class="cat-btn" onclick="toggle(\'' + key + '\',\'pm\')" title="晚上餵藥">' + catSVG(pmOk ? C_PM : C_UNDONE) + '</button>';
-    html += '</div></div>';
+    html += '</div>';
+    html += '<div class="syms">';
+    html += '<button class="sym-btn" onclick="toggle(\'' + key + '\',\'vomit\')" title="嘔吐"><div class="sym-dot' + (vomitOk ? ' sym-vomit' : '') + '">吐</div></button>';
+    html += '<button class="sym-btn" onclick="toggle(\'' + key + '\',\'pant\')" title="喘氣"><div class="sym-dot' + (pantOk ? ' sym-pant' : '') + '">喘</div></button>';
+    html += '</div>';
+    html += '</div>';
   }
 
   document.getElementById('grid').innerHTML = html;
@@ -546,7 +586,9 @@ function render() {
   document.getElementById('legend').innerHTML =
     '<div class="legend-item">' + catSVG(C_AM) + '<span>早上</span></div>' +
     '<div class="legend-item">' + catSVG(C_PM) + '<span>晚上</span></div>' +
-    '<div class="legend-item">' + catSVG(C_UNDONE) + '<span>未餵</span></div>';
+    '<div class="legend-item">' + catSVG(C_UNDONE) + '<span>未餵</span></div>' +
+    '<div class="legend-item"><div class="sym-dot sym-vomit" style="width:18px;height:18px;font-size:8px;display:inline-flex">吐</div><span>嘔吐</span></div>' +
+    '<div class="legend-item"><div class="sym-dot sym-pant" style="width:18px;height:18px;font-size:8px;display:inline-flex">喘</div><span>喘氣</span></div>';
 }
 
 function changeMonth(dir) {
@@ -558,7 +600,7 @@ function changeMonth(dir) {
 
 // ── Toggle ────────────────────────────────────────────────────────────────────
 function toggle(key, period) {
-  if (!records[key]) records[key] = { am: false, pm: false };
+  if (!records[key]) records[key] = { am: false, pm: false, vomit: false, pant: false };
   records[key][period] = !records[key][period];
   saveLocal();
   render();
@@ -635,7 +677,12 @@ async function syncAll() {
     // 完全以 server 為準，本地全部替換
     records = {};
     for (var key in serverData) {
-      records[key] = { am: !!serverData[key].am, pm: !!serverData[key].pm };
+      records[key] = {
+        am:    !!serverData[key].am,
+        pm:    !!serverData[key].pm,
+        vomit: !!serverData[key].vomit,
+        pant:  !!serverData[key].pant
+      };
     }
     saveLocal();
     render();

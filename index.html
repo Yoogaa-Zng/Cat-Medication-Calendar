@@ -653,8 +653,11 @@ function jsonpFetch(url) {
   });
 }
 
+var pushInProgress = false;
+
 async function syncAll() {
   if (!scriptUrl) { setStatus('尚未設定同步網址'); return; }
+  if (pushInProgress) { setStatus('寫入中，完成後自動同步…'); return; }
   spinning(true);
   setStatus('同步中…');
   try {
@@ -702,24 +705,29 @@ async function pushOne(key, period, value) {
 }
 
 async function pushToggle(key, period, value) {
+  pushInProgress = true;
+  setStatus('寫入中…');
   var url = scriptUrl + '?action=set&date=' + key + '&period=' + period + '&value=' + (value ? '1' : '0');
-  var attempts = 3;
-  for (var i = 0; i < attempts; i++) {
+  var success = false;
+  for (var i = 0; i < 3; i++) {
     try {
       var res = await jsonpFetch(url);
-      if (res && res.ok) {
-        var t = new Date();
-        setStatus('已同步  ' + pad(t.getHours()) + ':' + pad(t.getMinutes()));
-        return;
-      }
+      if (res && res.ok) { success = true; break; }
     } catch(e) {}
-    if (i < attempts - 1) await new Promise(function(r){ setTimeout(r, 1500); });
+    if (i < 2) await new Promise(function(r){ setTimeout(r, 1500); });
   }
-  // 3 次都失敗 → 還原本地狀態，避免跟 server 不一致
-  if (records[key]) records[key][period] = !value;
-  saveLocal();
-  render();
-  setStatus('寫入失敗，請重試');
+  pushInProgress = false;
+
+  if (success) {
+    // push 完成後立刻從 server 確認，確保資料一致
+    await syncAll();
+  } else {
+    // 寫入失敗 → 還原本地狀態
+    if (records[key]) records[key][period] = !value;
+    saveLocal();
+    render();
+    setStatus('寫入失敗，請重試');
+  }
 }
 
 // ── Setup sheet ───────────────────────────────────────────────────────────────

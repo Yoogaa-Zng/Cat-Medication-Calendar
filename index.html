@@ -108,7 +108,7 @@
     /* ── Calendar grid ── */
     .grid {
       display: grid;
-      grid-template-columns: repeat(7, 1fr);
+      grid-template-columns: repeat(7, minmax(0, 1fr));
       gap: 4px;
     }
 
@@ -172,7 +172,7 @@
     /* ── Symptom dots ── */
     .syms {
       display: flex;
-      gap: 3px;
+      gap: 2px;
       align-items: center;
     }
 
@@ -180,7 +180,7 @@
       background: none;
       border: none;
       cursor: pointer;
-      padding: 1px;
+      padding: 0;
       border-radius: 4px;
       line-height: 0;
       transition: transform 0.12s;
@@ -189,11 +189,11 @@
     .sym-btn:active { transform: scale(0.85); }
 
     .sym-dot {
-      width: 22px; height: 22px;
+      width: 18px; height: 18px;
       border-radius: 50%;
       background: var(--undone);
       display: flex; align-items: center; justify-content: center;
-      font-size: 8.5px;
+      font-size: 7.5px;
       font-weight: 700;
       color: rgba(255,255,255,0.75);
       transition: background 0.15s;
@@ -204,7 +204,7 @@
     @media (max-width: 360px) {
       .cat-icon { width: 20px; height: 20px; }
       .cell { min-height: 84px; gap: 1px; }
-      .sym-dot { width: 18px; height: 18px; font-size: 7px; }
+      .sym-dot { width: 16px; height: 16px; font-size: 6.5px; }
     }
 
     /* ── Legend ── */

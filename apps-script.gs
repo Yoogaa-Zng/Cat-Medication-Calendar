@@ -41,6 +41,7 @@ function colForPeriod(period) {
 }
 
 // 取得所有記錄（回傳資料物件）
+// 重複列用 OR 合併：任何一列為 true 就算 true
 function getAllRecordsData() {
   var sheet = getSheet();
   var rows  = sheet.getDataRange().getValues();
@@ -49,39 +50,41 @@ function getAllRecordsData() {
   for (var i = 1; i < rows.length; i++) {
     var date = formatDate(rows[i][0]);
     if (!date) continue;
-    out[date] = {
-      am:    toBool(rows[i][1]),
-      pm:    toBool(rows[i][2]),
-      vomit: rows[i].length > 3 ? toBool(rows[i][3]) : false,
-      pant:  rows[i].length > 4 ? toBool(rows[i][4]) : false
-    };
+    if (!out[date]) out[date] = { am: false, pm: false, vomit: false, pant: false };
+    out[date].am    = out[date].am    || toBool(rows[i][1]);
+    out[date].pm    = out[date].pm    || toBool(rows[i][2]);
+    out[date].vomit = out[date].vomit || (rows[i].length > 3 ? toBool(rows[i][3]) : false);
+    out[date].pant  = out[date].pant  || (rows[i].length > 4 ? toBool(rows[i][4]) : false);
   }
   return out;
 }
 
 // 寫入或更新一筆記錄（回傳資料物件）
+// 更新所有相同日期的列，防止重複列造成讀寫不一致
 function setRecordData(date, period, value) {
   if (!date || !period) return { error: 'Missing params' };
   var col = colForPeriod(period);
   if (col === -1) return { error: 'Unknown period: ' + period };
 
-  var sheet  = getSheet();
-  var rows   = sheet.getDataRange().getValues();
-  var rowIdx = -1;
+  var sheet      = getSheet();
+  var rows       = sheet.getDataRange().getValues();
+  var matchedIdx = [];
 
   for (var i = 1; i < rows.length; i++) {
     if (formatDate(rows[i][0]) === date) {
-      rowIdx = i + 1; // Sheets 從 1 起算
-      break;
+      matchedIdx.push(i + 1); // Sheets 從 1 起算
     }
   }
 
-  if (rowIdx === -1) {
+  if (matchedIdx.length === 0) {
     var newRow = [date, false, false, false, false];
     newRow[col - 1] = value;
     sheet.appendRow(newRow);
   } else {
-    sheet.getRange(rowIdx, col).setValue(value);
+    // 更新所有找到的列（處理重複列）
+    for (var j = 0; j < matchedIdx.length; j++) {
+      sheet.getRange(matchedIdx[j], col).setValue(value);
+    }
   }
 
   return { ok: true };

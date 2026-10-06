@@ -291,25 +291,37 @@
     }
 
     /* ── Legend ── */
+    /* 6 個項目要排進同一行：圖示縮小、間距收窄、文字不換行。
+       極窄螢幕（≤340px）改成 3×2 的整齊兩排，避免單一項目落單 */
     .legend {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 8px 16px;
+      gap: 8px 10px;
       padding: 12px 0 6px;
-    }
-    .legend-missed {
-      width: 16px; height: 16px;
-      border-radius: 5px;
-      background: var(--missed-bg);
-      border: 1.5px solid var(--missed-border);
     }
     .legend-item {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
       font-size: 11px;
       color: var(--muted);
+      white-space: nowrap;
+    }
+    .legend-item .cat-icon { width: 20px; height: 20px; }
+    .legend-dot {
+      width: 16px; height: 16px;
+      font-size: 7.5px;
+      display: inline-flex;
+    }
+    .legend-missed {
+      width: 14px; height: 14px;
+      border-radius: 4px;
+      background: var(--missed-bg);
+      border: 1.5px solid var(--missed-border);
+    }
+    @media (max-width: 340px) {
+      .legend { display: grid; grid-template-columns: repeat(3, auto); justify-content: center; gap: 8px 14px; }
     }
 
     /* ── Bottom bar ── */
@@ -786,8 +798,8 @@ function render() {
     '<div class="legend-item">' + catSVG(C_AM) + '<span>早上</span></div>' +
     '<div class="legend-item">' + catSVG(C_PM) + '<span>晚上</span></div>' +
     '<div class="legend-item">' + catSVG(C_UNDONE) + '<span>未餵</span></div>' +
-    '<div class="legend-item"><div class="sym-dot sym-vomit" style="width:18px;height:18px;font-size:8px;display:inline-flex">吐</div><span>嘔吐</span></div>' +
-    '<div class="legend-item"><div class="sym-dot sym-pant" style="width:18px;height:18px;font-size:8px;display:inline-flex">喘</div><span>喘氣</span></div>' +
+    '<div class="legend-item"><div class="sym-dot sym-vomit legend-dot">吐</div><span>嘔吐</span></div>' +
+    '<div class="legend-item"><div class="sym-dot sym-pant legend-dot">喘</div><span>喘氣</span></div>' +
     '<div class="legend-item"><span class="legend-missed"></span><span>漏記</span></div>';
 }
 

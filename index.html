@@ -327,14 +327,23 @@
       color: var(--muted);
       line-height: 1;
     }
+    /* 今天的圓點畫在日期「後面」（::before），不佔版面空間，
+       所以今天這格的貓與其他格排得完全一樣；原本把日期本身撐成圓形，會讓整格多出 7px */
     .cell.is-today .day-num {
+      position: relative;
+      z-index: 0;
       color: var(--on-accent);
-      background: var(--accent-strong);
-      width: 19px; height: 19px;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
       font-weight: 700;
-      margin: -2px 0 1px;
+    }
+    .cell.is-today .day-num::before {
+      content: "";
+      position: absolute;
+      left: 50%; top: 50%;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--accent-strong);
+      transform: translate(-50%, -50%);
+      z-index: -1;
     }
 
     .cats {

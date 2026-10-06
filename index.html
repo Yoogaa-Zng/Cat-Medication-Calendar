@@ -579,22 +579,43 @@
     }
     .field-input:focus { border-color: var(--accent-strong); background: var(--white); }
 
+    .field-hint {
+      margin: -10px 0 16px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* 建立同步的步驟：只有第一個人需要，預設收起 */
     .steps {
       background: var(--bg);
       border-radius: 10px;
-      padding: 12px 14px;
+      padding: 0 14px;
       margin-bottom: 18px;
     }
-    .steps-title {
-      font-size: 11px;
+    .steps summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 44px;
+      font-size: 12.5px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--muted);
-      margin-bottom: 8px;
+      color: var(--text);
+      cursor: pointer;
+      list-style: none;
     }
+    .steps summary::-webkit-details-marker { display: none; }
+    .steps summary::after {
+      content: "›";
+      font-size: 18px;
+      color: var(--muted);
+      transition: transform 0.2s;
+    }
+    .steps[open] summary::after { transform: rotate(90deg); }
+    .steps summary:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; border-radius: 8px; }
     .steps ol {
-      padding-left: 16px;
+      padding: 0 0 12px 16px;
       display: flex;
       flex-direction: column;
       gap: 5px;
@@ -730,7 +751,7 @@
   <div class="bottom-bar">
     <div class="sync-info" id="syncInfo" role="status" aria-live="polite">
       <span class="sync-dot" id="syncDot"></span>
-      <span id="syncText">尚未設定同步</span>
+      <span id="syncText">尚未設定同步（紀錄只在這支手機）</span>
     </div>
     <div class="bar-actions">
       <button class="refresh-btn" id="refreshBtn" onclick="syncAll()" title="重新同步">↻</button>
@@ -766,11 +787,12 @@
     <label class="field-label" for="inputName">貓咪名字</label>
     <input class="field-input" type="text" id="inputName" placeholder="例：橘子、豆豆、咪咪" maxlength="20">
 
-    <label class="field-label" for="inputUrl">Google Drive 同步網址（選填）</label>
-    <input class="field-input" type="url" id="inputUrl" placeholder="https://script.google.com/macros/s/…/exec">
+    <label class="field-label" for="inputUrl">同步網址（選填）</label>
+    <input class="field-input" type="url" id="inputUrl" placeholder="https://script.google.com/macros/s/…/exec" aria-describedby="urlHint">
+    <div class="field-hint" id="urlHint">家人已經建好了？向對方要同步網址，貼在這裡就好。</div>
 
-    <div class="steps">
-      <div class="steps-title">如何設定 Google Drive 同步</div>
+    <details class="steps">
+      <summary>第一次建立同步（只需要一個人做一次）</summary>
       <ol>
         <li>到 <b>Google Drive</b> 新增一個 Google 試算表</li>
         <li>開啟試算表，點「<b>擴充功能</b>」→「<b>Apps Script</b>」</li>
@@ -778,9 +800,9 @@
         <li>點「<b>部署</b>」→「<b>新增部署作業</b>」→ 類型選「<b>網頁應用程式</b>」</li>
         <li>執行身分：<b>我</b>，存取權：<b>所有人</b>，按「<b>部署</b>」並授權</li>
         <li>複製產生的「<b>網頁應用程式網址</b>」貼到上方欄位</li>
-        <li>把這個網頁的網址傳給家人，他們同樣在這裡貼上同步網址即可共用</li>
+        <li>把這個同步網址傳給家人，他們貼在上方欄位就能共用</li>
       </ol>
-    </div>
+    </details>
 
     <div class="sheet-actions">
       <button class="btn-cancel" onclick="closeSetup()">取消</button>
@@ -793,6 +815,7 @@
 // ── Constants ─────────────────────────────────────────────────────────────────
 var PERIOD_LABEL = { am: '早上餵藥', pm: '晚上餵藥', vomit: '嘔吐', pant: '喘氣' };
 var WEEKDAYS     = ['日','一','二','三','四','五','六'];
+var NO_SYNC      = '尚未設定同步（紀錄只在這支手機）';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 var curYear, curMonth;
@@ -1175,7 +1198,7 @@ function syncFailMessage(e) {
 }
 
 async function syncAll() {
-  if (!scriptUrl) { setStatus('尚未設定同步網址'); return; }
+  if (!scriptUrl) { setStatus(NO_SYNC); return; }
   if (pushCount > 0) { setStatus('寫入中，完成後自動同步…', 'busy'); return; }
   if (syncing) { syncAgain = true; return; }   // 同步進行中又被要求同步 → 結束後再跑一次
   syncing = true;
@@ -1314,7 +1337,7 @@ function saveSetup() {
   if (scriptUrl) {
     syncAll();
   } else {
-    setStatus('尚未設定同步網址');
+    setStatus(NO_SYNC);
   }
 }
 

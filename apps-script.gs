@@ -5,6 +5,8 @@
 function doGet(e) {
   var action   = e.parameter.action;
   var callback = e.parameter.callback; // JSONP 支援（手機瀏覽器用）
+  // 只接受合法的函式名稱，避免有人塞入任意程式碼
+  if (callback && !/^[A-Za-z_$][\w$.]{0,63}$/.test(callback)) callback = null;
   var data;
 
   try {
@@ -63,6 +65,7 @@ function getAllRecordsData() {
 // 更新所有相同日期的列，防止重複列造成讀寫不一致
 function setRecordData(date, period, value) {
   if (!date || !period) return { error: 'Missing params' };
+  if (!isValidDate(date)) return { error: 'Invalid date: ' + date };
   var col = colForPeriod(period);
   if (col === -1) return { error: 'Unknown period: ' + period };
 
@@ -113,17 +116,31 @@ function getSheet() {
   return sheet;
 }
 
+// 必須是真實存在的 YYYY-MM-DD（擋掉 abc、2026-13-45 這類會寫出垃圾列的輸入）
+function isValidDate(s) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s));
+  if (!m) return false;
+  var d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3];
+}
+
+// Sheets 會用「試算表時區」把 YYYY-MM-DD 轉成 Date，所以轉回字串也要用同一個時區
+// （原本用 Script 時區：兩者不同時，日期會差一天）
+function sheetTimeZone() {
+  return SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone() || Session.getScriptTimeZone();
+}
+
 // Sheets 會把 YYYY-MM-DD 自動轉成 Date 物件，統一用試算表時區轉回字串
 function formatDate(val) {
   if (val instanceof Date) {
-    return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    return Utilities.formatDate(val, sheetTimeZone(), 'yyyy-MM-dd');
   }
   var s = String(val || '').trim();
   // 處理舊格式字串（如 "Sat May 22 2026 ..."）
   if (s && !/^\d{4}-\d{2}-\d{2}$/.test(s)) {
     var d = new Date(s);
     if (!isNaN(d.getTime())) {
-      return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      return Utilities.formatDate(d, sheetTimeZone(), 'yyyy-MM-dd');
     }
   }
   return s;

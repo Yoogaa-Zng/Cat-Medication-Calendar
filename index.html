@@ -466,6 +466,7 @@
     /* 點擊區 44×44；外觀仍是 30px 的小圈（畫在 ::before） */
     .refresh-btn {
       position: relative;
+      z-index: 0;   /* 自成一層，讓圓圈(::before)能放到箭頭後面 */
       width: 44px; height: 44px;
       border: none;
       background: none;
@@ -478,6 +479,7 @@
     .refresh-btn::before {
       content: "";
       position: absolute;
+      z-index: -1;   /* 在 ↻ 後面：圓圈變實心時，箭頭不會被蓋住 */
       inset: 7px;
       border: 1.5px solid var(--border);
       border-radius: 50%;

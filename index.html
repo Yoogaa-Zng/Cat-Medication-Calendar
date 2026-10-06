@@ -126,7 +126,6 @@
       transition: opacity 0.15s;
     }
 
-    .cat-name:hover { opacity: 0.65; }
 
     /* 今日進度：打開 App 的第一句話 */
     .header-sub {
@@ -161,7 +160,6 @@
       transition: background 0.15s, color 0.15s;
       line-height: 1;
     }
-    .nav-btn:hover { background: var(--border); color: var(--text); }
 
     .month-center { text-align: center; }
 
@@ -293,7 +291,6 @@
       cursor: pointer;
       transition: border-color 0.15s;
     }
-    .cell:hover { border-color: var(--hover-border); }
 
     .cell.empty {
       background: transparent;
@@ -486,8 +483,6 @@
       border-radius: 50%;
       transition: background 0.15s;
     }
-    .refresh-btn:hover { color: var(--text); }
-    .refresh-btn:hover::before { background: var(--border); }
     .refresh-btn.spinning { animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -504,7 +499,6 @@
       transition: background 0.15s, color 0.15s;
       font-family: inherit;
     }
-    .setup-btn:hover { background: var(--border); color: var(--text); }
 
     /* ── Overlay / bottom sheet ── */
     .overlay {
@@ -647,7 +641,6 @@
       cursor: pointer;
       transition: background 0.15s;
     }
-    .btn-cancel:hover { background: var(--btn-hover); }
     .btn-save {
       flex: 2;
       background: var(--accent-strong);
@@ -661,7 +654,6 @@
       cursor: pointer;
       transition: opacity 0.15s;
     }
-    .btn-save:hover { opacity: 0.88; }
 
     /* ── Toast（記錄後的回饋＋復原） ── */
     .toast {
@@ -759,6 +751,25 @@
     }
     .link-btn:disabled { opacity: 0.6; cursor: default; }
     .version-note { min-height: 1.3em; margin-top: -8px; font-size: 12px; color: var(--muted); text-align: right; }
+
+    /* ── 懸停與按下的回饋 ──
+       手機沒有滑鼠，點一下之後系統會把「:hover」一直留著（畫面上就會卡著實心圓、卡著底色）。
+       所以懸停效果只在「真的有滑鼠」的裝置上才生效；手機改成「按下去的瞬間」才有回饋。 */
+    @media (hover: hover) {
+      .cat-name:hover { opacity: 0.65; }
+      .nav-btn:hover { background: var(--border); color: var(--text); }
+      .cell:hover { border-color: var(--hover-border); }
+      .refresh-btn:hover { color: var(--text); }
+      .refresh-btn:hover::before { background: var(--border); }
+      .setup-btn:hover { background: var(--border); color: var(--text); }
+      .btn-cancel:hover { background: var(--btn-hover); }
+      .btn-save:hover { opacity: 0.88; }
+    }
+    .nav-btn:active { background: var(--border); color: var(--text); }
+    .refresh-btn:active::before { background: var(--border); }
+    .setup-btn:active { background: var(--border); color: var(--text); }
+    .btn-cancel:active { background: var(--btn-hover); }
+    .btn-save:active { opacity: 0.88; }
 
     @media (prefers-reduced-motion: reduce) {
       * { transition: none !important; animation: none !important; }

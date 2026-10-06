@@ -5,23 +5,78 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>貓咪餵藥日曆</title>
   <style>
+    /* ── Design tokens ──
+       強調色分兩階：--accent 只給邊框與光暈（裝飾），--accent-strong 給文字與實心按鈕（過 4.5:1）。
+       所有顏色都走變數，深色模式只需要在下面的 @media 換一組值。 */
     :root {
-      color-scheme: light;
+      color-scheme: light dark;
       --bg: #F8F7F4;
       --white: #FFFFFF;
       --border: #EEECEA;
       --text: #2C2C2C;
-      --muted: #6B6B66;       /* 對比 5.0:1（底 #F8F7F4） */
+      --muted: #6B6B66;
       --accent: #C4896A;
-      --am: #C97C00;          /* 圖形對比 3.3:1 */
-      --pm: #6573C0;          /* 圖形對比 4.4:1 */
-      --undone: #C4C0BA;
-      --vomit: #BC4A38;       /* 白字對比 5.0:1 */
-      --pant: #2B7F83;        /* 白字對比 4.7:1 */
+      --accent-strong: #9E5A41;
+      --on-accent: #FFFFFF;
+      --am: #C97C00;
+      --pm: #6573C0;
+      --undone: #B3AEA6;
+      --vomit: #BC4A38;
+      --pant: #2B7F83;
       --missed-bg: #FCEFE9;
       --missed-border: #F0D2C4;
+      --today-bg: #FEF8F4;
+      --am-soft: #FFF4E0;
+      --pm-soft: #EEF0FB;
+      --avatar-bg: #F3E4DA;
+      --avatar-glow: rgba(158,90,65,0.22);
+      --wd-sun: #B24C4C;
+      --wd-sat: #4A69B2;
+      --hover-border: #CCC9C4;
+      --code-bg: #E6E2DB;
+      --btn-hover: #DDD9D3;
+      --toast-bg: #2C2C2C;
+      --toast-fg: #FFFFFF;
+      --toast-action: #F2C9B0;
+      --scrim: rgba(0,0,0,0.3);
       --ok: #3E8E5A;
       --err: #B8432F;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1B1917;
+        --white: #26231F;
+        --border: #37332E;
+        --text: #F1EDE7;
+        --muted: #AAA59D;
+        --accent: #E0A98C;
+        --accent-strong: #E0A98C;
+        --on-accent: #1B1917;
+        --am: #E8A020;
+        --pm: #97A3E6;
+        --undone: #6B655C;
+        --vomit: #B8432F;
+        --pant: #2B7F83;
+        --missed-bg: #3A2822;
+        --missed-border: #5E4036;
+        --today-bg: #2E2520;
+        --am-soft: #3A2E14;
+        --pm-soft: #262A44;
+        --avatar-bg: #E6D5C3;
+        --avatar-glow: rgba(224,169,140,0.25);
+        --wd-sun: #E08585;
+        --wd-sat: #8FA6E6;
+        --hover-border: #4A453F;
+        --code-bg: #37332E;
+        --btn-hover: #37332E;
+        --toast-bg: #F1EDE7;
+        --toast-fg: #1B1917;
+        --toast-action: #9E5A41;
+        --scrim: rgba(0,0,0,0.6);
+        --ok: #6FBF8A;
+        --err: #F08A76;
+      }
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -41,9 +96,22 @@
 
     /* ── Header ── */
     .header {
-      padding: 28px 0 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      padding: 26px 0 0;
       text-align: center;
     }
+
+    .avatar {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: var(--avatar-bg);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 0 3px var(--white), 0 4px 14px var(--avatar-glow);
+    }
+    .avatar svg { display: block; width: 50px; height: 50px; }
 
     .cat-name {
       display: inline-flex;
@@ -60,11 +128,16 @@
 
     .cat-name:hover { opacity: 0.65; }
 
+    /* 今日進度：打開 App 的第一句話 */
     .header-sub {
-      font-size: 11.5px;
-      color: var(--muted);
-      margin-top: 3px;
-      letter-spacing: 0.4px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      padding: 3px 13px;
+      letter-spacing: 0.2px;
     }
 
     /* ── Month nav ── */
@@ -93,8 +166,8 @@
     .month-center { text-align: center; }
 
     .month-label {
-      font-size: 17px;
-      font-weight: 600;
+      font-size: 20px;
+      font-weight: 700;
       letter-spacing: -0.2px;
     }
 
@@ -103,7 +176,7 @@
       border: none;
       font-family: inherit;
       font-size: 12px;
-      color: var(--accent);
+      color: var(--accent-strong);
       font-weight: 600;
       cursor: pointer;
       padding: 4px 8px;
@@ -151,12 +224,12 @@
       transition: transform 0.12s, background 0.15s, border-color 0.15s;
     }
     .dose-btn:active { transform: scale(0.97); }
-    .dose-btn .cat-icon { width: 42px; height: 42px; }
+    .dose-btn .cat-icon { width: 44px; height: 44px; }
     .dose-label { font-size: 14px; font-weight: 600; }
     .dose-state { font-size: 12px; color: var(--muted); }
     .dose-btn.on .dose-state { color: var(--text); font-weight: 600; }
-    .dose-btn.on.am { border-color: var(--am); background: #FFF4E0; }
-    .dose-btn.on.pm { border-color: var(--pm); background: #EEF0FB; }
+    .dose-btn.on.am { border-color: var(--am); background: var(--am-soft); }
+    .dose-btn.on.pm { border-color: var(--pm); background: var(--pm-soft); }
 
     .sym-act {
       min-height: 48px;
@@ -177,7 +250,7 @@
 
     .dose-btn:focus-visible, .sym-act:focus-visible, .cell:focus-visible,
     .today-link:focus-visible, .toast button:focus-visible {
-      outline: 2px solid var(--accent);
+      outline: 2px solid var(--accent-strong);
       outline-offset: 2px;
     }
 
@@ -195,10 +268,11 @@
       color: var(--muted);
       padding: 3px 0;
     }
-    .wd:first-child { color: #D07070; }
-    .wd:last-child  { color: #7090D0; }
+    .wd:first-child { color: var(--wd-sun); }
+    .wd:last-child  { color: var(--wd-sat); }
 
-    /* ── Calendar grid ── */
+    /* ── Calendar grid ──
+       原則：「有」是實心、「沒有」是空心輪廓；還沒到的日子只留日期。 */
     .grid {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -207,8 +281,9 @@
 
     .cell {
       background: var(--white);
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
+      border: 1.5px solid transparent;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.035);
+      border-radius: 12px;
       padding: 5px 2px 4px;
       display: flex;
       flex-direction: column;
@@ -218,17 +293,17 @@
       cursor: pointer;
       transition: border-color 0.15s;
     }
-    .cell:hover { border-color: #CCC9C4; }
+    .cell:hover { border-color: var(--hover-border); }
 
     .cell.empty {
       background: transparent;
-      border-color: transparent;
+      box-shadow: none;
       pointer-events: none;
     }
 
     .cell.is-today {
       border-color: var(--accent);
-      background: #FEF8F4;
+      background: var(--today-bg);
     }
 
     /* 過去、起始日之後、有一餐沒記錄 → 淡橘底，一眼看出漏記 */
@@ -237,9 +312,14 @@
       border-color: var(--missed-border);
     }
 
-    /* 未來的日子：只淡化圖示，日期數字維持可讀 */
-    .cell.is-future .cat-icon  { opacity: 0.45; }
-    .cell.is-future .sym-dot   { opacity: 0.5; }
+    /* 還沒到的日子：不畫任何空圖示，整排自動變矮 */
+    .cell.is-future {
+      background: transparent;
+      box-shadow: none;
+      min-height: 40px;
+    }
+    .cell.is-future .cats,
+    .cell.is-future .syms { display: none; }
 
     .day-num {
       font-size: 11px;
@@ -248,8 +328,13 @@
       line-height: 1;
     }
     .cell.is-today .day-num {
-      color: var(--accent);
+      color: var(--on-accent);
+      background: var(--accent-strong);
+      width: 19px; height: 19px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
       font-weight: 700;
+      margin: -2px 0 1px;
     }
 
     .cats {
@@ -262,9 +347,31 @@
     /* 格子內的圖示只負責顯示；操作統一在「今天」卡片與點格子後的面板 */
     .cat-mark { padding: 1px; line-height: 0; }
 
+    /* ── 貓貓圖示 ──
+       有餵＝實心（虎斑紋、耳內粉色）；沒餵＝只有輪廓。
+       早上睜眼、晚上瞇眼睡覺，早晚不只靠顏色分辨。 */
     .cat-icon { display: block; width: 24px; height: 24px; }
+    .cat-icon.cat-am { --fur: var(--am); }
+    .cat-icon.cat-pm { --fur: var(--pm); }
+    .cat-icon .fur   { fill: var(--fur); stroke: var(--fur); stroke-width: 1.6; stroke-linejoin: round; }
+    .cat-icon .inner { fill: rgba(255,255,255,0.4); }
+    .cat-icon .stripe { fill: none; stroke: rgba(0,0,0,0.28); stroke-width: 1.3; stroke-linecap: round; }
+    .cat-icon .eye   { fill: #2B2119; }
+    .cat-icon .glint { fill: #FFFFFF; }
+    .cat-icon .shut  { fill: none; stroke: #2B2119; stroke-width: 1.3; stroke-linecap: round; }
+    .cat-icon .nose  { fill: rgba(43,33,25,0.55); stroke: rgba(43,33,25,0.55); stroke-width: 0.6; stroke-linejoin: round; }
+    .cat-icon .mouth { fill: none; stroke: rgba(43,33,25,0.5); stroke-width: 0.8; stroke-linecap: round; }
 
-    /* ── Symptom dots ── */
+    .cat-icon.empty .fur   { fill: none; stroke: var(--undone); stroke-width: 1.5; }
+    .cat-icon.empty .inner,
+    .cat-icon.empty .stripe,
+    .cat-icon.empty .glint { display: none; }
+    .cat-icon.empty .eye   { fill: var(--undone); }
+    .cat-icon.empty .shut  { stroke: var(--undone); }
+    .cat-icon.empty .nose  { fill: var(--undone); stroke: var(--undone); }
+    .cat-icon.empty .mouth { stroke: var(--undone); }
+
+    /* ── Symptom dots：沒有＝空心圈，有＝實心 ── */
     .syms {
       display: flex;
       gap: 2px;
@@ -274,15 +381,16 @@
     .sym-dot {
       width: 18px; height: 18px;
       border-radius: 50%;
-      background: var(--undone);
+      border: 1.5px solid var(--undone);
+      background: transparent;
       display: flex; align-items: center; justify-content: center;
       font-size: 7.5px;
       font-weight: 700;
-      color: rgba(255,255,255,0.9);
+      color: var(--undone);
       transition: background 0.15s;
     }
-    .sym-vomit { background: var(--vomit); color: white; }
-    .sym-pant  { background: var(--pant);  color: white; }
+    .sym-vomit { background: var(--vomit); border-color: var(--vomit); color: #FFFFFF; }
+    .sym-pant  { background: var(--pant);  border-color: var(--pant);  color: #FFFFFF; }
 
     @media (max-width: 360px) {
       .cat-icon { width: 20px; height: 20px; }
@@ -290,8 +398,8 @@
       .sym-dot { width: 16px; height: 16px; font-size: 6.5px; }
     }
 
-    /* ── Legend ── */
-    /* 6 個項目要排進同一行：圖示縮小、間距收窄、文字不換行。
+    /* ── Legend ──
+       6 個項目要排進同一行：圖示縮小、間距收窄、文字不換行。
        極窄螢幕（≤340px）改成 3×2 的整齊兩排，避免單一項目落單 */
     .legend {
       display: flex;
@@ -324,13 +432,10 @@
       .legend { display: grid; grid-template-columns: repeat(3, auto); justify-content: center; gap: 8px 14px; }
     }
 
-    /* ── Bottom bar ── */
+    /* ── Bottom bar：設定是低頻操作，退到次要 ── */
     .bottom-bar {
       margin-top: 10px;
-      background: var(--white);
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 10px 14px;
+      padding: 4px 2px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -361,44 +466,55 @@
     .bar-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
       flex-shrink: 0;
     }
 
+    /* 點擊區 44×44；外觀仍是 30px 的小圈（畫在 ::before） */
     .refresh-btn {
-      width: 30px; height: 30px;
-      border-radius: 50%;
-      border: 1.5px solid var(--border);
+      position: relative;
+      width: 44px; height: 44px;
+      border: none;
       background: none;
       cursor: pointer;
       font-size: 14px;
       color: var(--muted);
       display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s, color 0.15s;
+      transition: color 0.15s;
     }
-    .refresh-btn:hover { background: var(--border); color: var(--text); }
+    .refresh-btn::before {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border: 1.5px solid var(--border);
+      border-radius: 50%;
+      transition: background 0.15s;
+    }
+    .refresh-btn:hover { color: var(--text); }
+    .refresh-btn:hover::before { background: var(--border); }
     .refresh-btn.spinning { animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .setup-btn {
-      background: var(--accent);
-      color: white;
-      border: none;
+      background: transparent;
+      color: var(--muted);
+      border: 1.5px solid var(--border);
       border-radius: 8px;
-      padding: 6px 14px;
+      min-height: 44px;
+      padding: 0 16px;
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.15s;
+      transition: background 0.15s, color 0.15s;
       font-family: inherit;
     }
-    .setup-btn:hover { opacity: 0.82; }
+    .setup-btn:hover { background: var(--border); color: var(--text); }
 
     /* ── Overlay / bottom sheet ── */
     .overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.3);
+      background: var(--scrim);
       backdrop-filter: blur(3px);
       -webkit-backdrop-filter: blur(3px);
       display: flex;
@@ -453,7 +569,7 @@
       border: 1.5px solid var(--border);
       border-radius: 10px;
       padding: 11px 13px;
-      font-size: 14px;
+      font-size: 16px;   /* ≥16px：iPhone Safari 聚焦時才不會自動放大頁面 */
       font-family: inherit;
       color: var(--text);
       background: var(--bg);
@@ -461,36 +577,57 @@
       margin-bottom: 16px;
       transition: border-color 0.15s, background 0.15s;
     }
-    .field-input:focus { border-color: var(--accent); background: white; }
+    .field-input:focus { border-color: var(--accent-strong); background: var(--white); }
 
+    .field-hint {
+      margin: -10px 0 16px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* 建立同步的步驟：只有第一個人需要，預設收起 */
     .steps {
       background: var(--bg);
       border-radius: 10px;
-      padding: 12px 14px;
+      padding: 0 14px;
       margin-bottom: 18px;
     }
-    .steps-title {
-      font-size: 11px;
+    .steps summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 44px;
+      font-size: 12.5px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--muted);
-      margin-bottom: 8px;
+      color: var(--text);
+      cursor: pointer;
+      list-style: none;
     }
+    .steps summary::-webkit-details-marker { display: none; }
+    .steps summary::after {
+      content: "›";
+      font-size: 18px;
+      color: var(--muted);
+      transition: transform 0.2s;
+    }
+    .steps[open] summary::after { transform: rotate(90deg); }
+    .steps summary:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; border-radius: 8px; }
     .steps ol {
-      padding-left: 16px;
+      padding: 0 0 12px 16px;
       display: flex;
       flex-direction: column;
       gap: 5px;
     }
     .steps li {
       font-size: 12px;
-      color: #888;
+      color: var(--muted);
       line-height: 1.6;
     }
     .steps b { color: var(--text); }
     .steps code {
-      background: #E6E2DB;
+      background: var(--code-bg);
       border-radius: 3px;
       padding: 1px 5px;
       font-size: 11px;
@@ -514,11 +651,11 @@
       cursor: pointer;
       transition: background 0.15s;
     }
-    .btn-cancel:hover { background: #DDD9D3; }
+    .btn-cancel:hover { background: var(--btn-hover); }
     .btn-save {
       flex: 2;
-      background: var(--accent);
-      color: white;
+      background: var(--accent-strong);
+      color: var(--on-accent);
       border: none;
       border-radius: 10px;
       padding: 13px;
@@ -536,9 +673,10 @@
       left: 50%;
       bottom: 24px;
       transform: translate(-50%, 16px);
+      width: max-content;   /* left:50% 會把寬度限制在畫面一半，文字會被擠成窄條 */
       max-width: calc(100% - 28px);
-      background: #2C2C2C;
-      color: #FFFFFF;
+      background: var(--toast-bg);
+      color: var(--toast-fg);
       border-radius: 12px;
       padding: 8px 8px 8px 16px;
       font-size: 13.5px;
@@ -551,10 +689,16 @@
       z-index: 60;
     }
     .toast.show { opacity: 1; pointer-events: all; transform: translate(-50%, 0); }
+    /* 面板打開時，底部是「完成」鈕；提示條改放上方，避免蓋住 */
+    body.sheet-open .toast { bottom: auto; top: 16px; transform: translate(-50%, -16px); }
+    body.sheet-open .toast.show { transform: translate(-50%, 0); }
+    .sheet:focus { outline: none; }
     .toast button {
+      flex-shrink: 0;
+      white-space: nowrap;
       background: none;
       border: none;
-      color: #F2C9B0;
+      color: var(--toast-action);
       font-family: inherit;
       font-size: 13.5px;
       font-weight: 700;
@@ -572,10 +716,11 @@
 <div class="wrap">
 
   <div class="header">
+    <div class="avatar" id="avatar" aria-hidden="true"></div>
     <div class="cat-name" id="catName" onclick="openSetup()" title="點擊設定">
       <span id="catNameText">小貓咪</span>
     </div>
-    <div class="header-sub">每日餵藥記錄</div>
+    <div class="header-sub" id="headerSub" role="status"></div>
   </div>
 
   <div class="today" id="today"></div>
@@ -606,7 +751,7 @@
   <div class="bottom-bar">
     <div class="sync-info" id="syncInfo" role="status" aria-live="polite">
       <span class="sync-dot" id="syncDot"></span>
-      <span id="syncText">尚未設定同步</span>
+      <span id="syncText">尚未設定同步（紀錄只在這支手機）</span>
     </div>
     <div class="bar-actions">
       <button class="refresh-btn" id="refreshBtn" onclick="syncAll()" title="重新同步">↻</button>
@@ -618,7 +763,7 @@
 
 <!-- 某一天的紀錄面板（點月曆格子打開） -->
 <div class="overlay" id="dayOverlay" onclick="dayBg(event)">
-  <div class="sheet">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dayTitle" tabindex="-1">
     <div class="handle"></div>
     <h2 id="dayTitle"></h2>
     <div id="dayBody"></div>
@@ -635,18 +780,19 @@
 
 <!-- Bottom sheet -->
 <div class="overlay" id="overlay" onclick="overlayBg(event)">
-  <div class="sheet">
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="設定" tabindex="-1">
     <div class="handle"></div>
     <h2>設定</h2>
 
     <label class="field-label" for="inputName">貓咪名字</label>
     <input class="field-input" type="text" id="inputName" placeholder="例：橘子、豆豆、咪咪" maxlength="20">
 
-    <label class="field-label" for="inputUrl">Google Drive 同步網址（選填）</label>
-    <input class="field-input" type="url" id="inputUrl" placeholder="https://script.google.com/macros/s/…/exec">
+    <label class="field-label" for="inputUrl">同步網址（選填）</label>
+    <input class="field-input" type="url" id="inputUrl" placeholder="https://script.google.com/macros/s/…/exec" aria-describedby="urlHint">
+    <div class="field-hint" id="urlHint">家人已經建好了？向對方要同步網址，貼在這裡就好。</div>
 
-    <div class="steps">
-      <div class="steps-title">如何設定 Google Drive 同步</div>
+    <details class="steps">
+      <summary>第一次建立同步（只需要一個人做一次）</summary>
       <ol>
         <li>到 <b>Google Drive</b> 新增一個 Google 試算表</li>
         <li>開啟試算表，點「<b>擴充功能</b>」→「<b>Apps Script</b>」</li>
@@ -654,9 +800,9 @@
         <li>點「<b>部署</b>」→「<b>新增部署作業</b>」→ 類型選「<b>網頁應用程式</b>」</li>
         <li>執行身分：<b>我</b>，存取權：<b>所有人</b>，按「<b>部署</b>」並授權</li>
         <li>複製產生的「<b>網頁應用程式網址</b>」貼到上方欄位</li>
-        <li>把這個網頁的網址傳給家人，他們同樣在這裡貼上同步網址即可共用</li>
+        <li>把這個同步網址傳給家人，他們貼在上方欄位就能共用</li>
       </ol>
-    </div>
+    </details>
 
     <div class="sheet-actions">
       <button class="btn-cancel" onclick="closeSetup()">取消</button>
@@ -667,12 +813,9 @@
 
 <script>
 // ── Constants ─────────────────────────────────────────────────────────────────
-var C_UNDONE = '#C4C0BA';   // 與 CSS 的 --undone / --am / --pm 保持一致
-var C_AM     = '#C97C00';
-var C_PM     = '#6573C0';
-
 var PERIOD_LABEL = { am: '早上餵藥', pm: '晚上餵藥', vomit: '嘔吐', pant: '喘氣' };
 var WEEKDAYS     = ['日','一','二','三','四','五','六'];
+var NO_SYNC      = '尚未設定同步（紀錄只在這支手機）';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 var curYear, curMonth;
@@ -683,34 +826,44 @@ var catName   = '小貓咪';
 var openDayKey = null;
 
 // ── Cat SVG ───────────────────────────────────────────────────────────────────
-function catSVG(color) {
-  // Two ear triangles + circular head; eyes + nose drawn on top
-  var e = 'rgba(255,255,255,0.6)'; // eye whites
-  var p = 'rgba(0,0,0,0.28)';      // pupils
-  var n = 'rgba(0,0,0,0.18)';      // nose
-  var m = 'rgba(0,0,0,0.12)';      // mouth
-  return [
-    '<svg class="cat-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">',
-    // Left ear
-    '<polygon points="3,18 10,5 16,18" fill="',color,'"/>',
-    // Right ear
-    '<polygon points="16,18 22,5 29,18" fill="',color,'"/>',
-    // Head
-    '<circle cx="16" cy="22" r="11" fill="',color,'"/>',
-    // Left eye white
-    '<ellipse cx="12" cy="20" rx="2.2" ry="2.6" fill="',e,'"/>',
-    // Right eye white
-    '<ellipse cx="20" cy="20" rx="2.2" ry="2.6" fill="',e,'"/>',
-    // Left pupil
-    '<ellipse cx="12" cy="20.6" rx="1.1" ry="1.7" fill="',p,'"/>',
-    // Right pupil
-    '<ellipse cx="20" cy="20.6" rx="1.1" ry="1.7" fill="',p,'"/>',
-    // Nose triangle
-    '<path d="M14.8 24.5 L17.2 24.5 L16 26.2 Z" fill="',n,'"/>',
-    // Smile
-    '<path d="M14.2 27 Q16 28.8 17.8 27" stroke="',m,'" stroke-width="0.9" fill="none" stroke-linecap="round"/>',
-    '</svg>'
-  ].join('');
+// 貓咪圖示：有餵＝實心虎斑貓，沒餵＝只有輪廓；早上睜眼、晚上瞇眼睡覺
+// 顏色全部走 CSS 變數（.cat-icon），所以深色模式不需要在這裡處理
+function catSVG(period, done) {
+  var eyes = (period === 'am')
+    ? '<ellipse class="eye" cx="11.4" cy="19" rx="1.5" ry="1.9"/><ellipse class="eye" cx="20.6" cy="19" rx="1.5" ry="1.9"/>' +
+      '<circle class="glint" cx="11.9" cy="18.2" r="0.55"/><circle class="glint" cx="21.1" cy="18.2" r="0.55"/>'
+    : '<path class="shut" d="M9.7 19.2 Q11.4 21.2 13.1 19.2"/><path class="shut" d="M18.9 19.2 Q20.6 21.2 22.3 19.2"/>';
+  return '<svg class="cat-icon cat-' + period + (done ? '' : ' empty') + '" viewBox="0 0 32 32" aria-hidden="true">' +
+    '<path class="fur" d="M4.1 18 L6.5 3.8 L14 9.2 Q16 8.7 18 9.2 L25.5 3.8 L27.9 18 A12 10.5 0 1 1 4.1 18 Z"/>' +
+    '<path class="inner" d="M7.2 14 L7.9 7.4 L12 10.6 Z"/><path class="inner" d="M24.8 14 L24.1 7.4 L20 10.6 Z"/>' +
+    '<path class="stripe" d="M16 10.6 L16 14.2 M12.6 11.4 L13.2 14 M19.4 11.4 L18.8 14 M4.9 19.6 L8.2 20 M5.6 23.2 L8.6 22.8 M27.1 19.6 L23.8 20 M26.4 23.2 L23.4 22.8"/>' +
+    eyes +
+    '<path class="nose" d="M14.9 22.9 L17.1 22.9 L16 24.2 Z"/>' +
+    '<path class="mouth" d="M16 24.2 L16 25.2 M16 25.2 Q14.9 26.2 13.9 25.7 M16 25.2 Q17.1 26.2 18.1 25.7"/>' +
+    '</svg>';
+}
+
+// 標題的虎斑貓頭像：兩餐都餵完時眼睛會瞇起來（滿足的表情）
+function tabbyAvatar(happy) {
+  var eyes = happy
+    ? '<path d="M18.2 34.8 Q22.5 39.2 26.8 34.8 M37.2 34.8 Q41.5 39.2 45.8 34.8" fill="none" stroke="#2B2119" stroke-width="2.4" stroke-linecap="round"/>'
+    : '<ellipse cx="22.5" cy="34" rx="4" ry="4.6" fill="#8CC269"/><ellipse cx="41.5" cy="34" rx="4" ry="4.6" fill="#8CC269"/>' +
+      '<ellipse cx="22.5" cy="34" rx="1.5" ry="3.6" fill="#2B2119"/><ellipse cx="41.5" cy="34" rx="1.5" ry="3.6" fill="#2B2119"/>' +
+      '<circle cx="23.9" cy="32.2" r="1.1" fill="#FFFFFF"/><circle cx="42.9" cy="32.2" r="1.1" fill="#FFFFFF"/>';
+  return '<svg viewBox="0 0 64 64" aria-hidden="true">' +
+    '<path d="M10 31 L12 8 L28 20 Z M54 31 L52 8 L36 20 Z" fill="#8C6A48" stroke="#8C6A48" stroke-width="3" stroke-linejoin="round"/>' +
+    '<path d="M14.5 24.5 L15 14 L22.5 19.5 Z M49.5 24.5 L49 14 L41.5 19.5 Z" fill="#C9958A"/>' +
+    '<ellipse cx="32" cy="36" rx="24" ry="21" fill="#8C6A48"/>' +
+    '<g fill="none" stroke="#241810" stroke-linecap="round">' +
+      '<path d="M32 16 L32 25 M25 17.5 L26.5 24 M39 17.5 L37.5 24" stroke-width="2.6"/>' +
+      '<path d="M9 34 L16.5 35.5 M9.5 40 L16.5 40 M55 34 L47.5 35.5 M54.5 40 L47.5 40" stroke-width="2.4"/>' +
+    '</g>' +
+    '<ellipse cx="32" cy="43.5" rx="10.5" ry="7.5" fill="#CDB08C"/>' +
+    eyes +
+    '<path d="M29.3 40 L34.7 40 L32 43.2 Z" fill="#B97A72" stroke="#B97A72" stroke-width="1" stroke-linejoin="round"/>' +
+    '<path d="M32 43.2 L32 45.8 M32 45.8 Q29.6 48.8 27 46.6 M32 45.8 Q34.4 48.8 37 46.6" fill="none" stroke="#5A3A2C" stroke-width="1.5" stroke-linecap="round"/>' +
+    '<path d="M21 42 L9 40.5 M21 45 L10 47 M43 42 L55 40.5 M43 45 L54 47" fill="none" stroke="rgba(241,230,214,0.85)" stroke-width="1.2" stroke-linecap="round"/>' +
+    '</svg>';
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -772,12 +925,12 @@ function render() {
     var label = dateLabel(key) + '，早上' + (amOk ? '已餵' : '沒有記錄') + '，晚上' + (pmOk ? '已餵' : '沒有記錄') +
                 (vomitOk ? '，有嘔吐' : '') + (pantOk ? '，有喘氣' : '');
 
-    html += '<div class="' + cls + '" role="button" tabindex="0" aria-label="' + label + '"' +
+    html += '<div class="' + cls + '" role="button" tabindex="0" data-key="' + key + '" aria-label="' + label + '"' +
             ' onclick="openDay(\'' + key + '\')" onkeydown="cellKey(event,\'' + key + '\')">';
     html += '<span class="day-num">' + d + '</span>';
     html += '<div class="cats">';
-    html += '<span class="cat-mark">' + catSVG(amOk ? C_AM : C_UNDONE) + '</span>';
-    html += '<span class="cat-mark">' + catSVG(pmOk ? C_PM : C_UNDONE) + '</span>';
+    html += '<span class="cat-mark">' + catSVG('am', amOk) + '</span>';
+    html += '<span class="cat-mark">' + catSVG('pm', pmOk) + '</span>';
     html += '</div>';
     html += '<div class="syms">';
     html += '<div class="sym-dot' + (vomitOk ? ' sym-vomit' : '') + '">吐</div>';
@@ -795,9 +948,9 @@ function render() {
 
   // Legend
   document.getElementById('legend').innerHTML =
-    '<div class="legend-item">' + catSVG(C_AM) + '<span>早上</span></div>' +
-    '<div class="legend-item">' + catSVG(C_PM) + '<span>晚上</span></div>' +
-    '<div class="legend-item">' + catSVG(C_UNDONE) + '<span>未餵</span></div>' +
+    '<div class="legend-item">' + catSVG('am', true) + '<span>早上</span></div>' +
+    '<div class="legend-item">' + catSVG('pm', true) + '<span>晚上</span></div>' +
+    '<div class="legend-item">' + catSVG('am', false) + '<span>未餵</span></div>' +
     '<div class="legend-item"><div class="sym-dot sym-vomit legend-dot">吐</div><span>嘔吐</span></div>' +
     '<div class="legend-item"><div class="sym-dot sym-pant legend-dot">喘</div><span>喘氣</span></div>' +
     '<div class="legend-item"><span class="legend-missed"></span><span>漏記</span></div>';
@@ -809,11 +962,11 @@ function dayControls(key) {
   var past = key < nowKey();
   var none = past ? '沒有記錄' : '還沒餵';
 
-  function dose(period, label, color) {
+  function dose(period, label) {
     var on = !!rec[period];
     return '<button class="dose-btn ' + period + (on ? ' on' : '') + '" aria-pressed="' + on + '"' +
            ' onclick="toggle(\'' + key + '\',\'' + period + '\')">' +
-           catSVG(on ? color : C_UNDONE) +
+           catSVG(period, on) +
            '<span class="dose-label">' + label + '</span>' +
            '<span class="dose-state">' + (on ? '已餵 ✓' : none) + '</span></button>';
   }
@@ -823,7 +976,7 @@ function dayControls(key) {
            ' onclick="toggle(\'' + key + '\',\'' + period + '\')">' + (on ? '✓ 有' + label : label) + '</button>';
   }
 
-  return '<div class="doses">' + dose('am', '早上', C_AM) + dose('pm', '晚上', C_PM) + '</div>' +
+  return '<div class="doses">' + dose('am', '早上') + dose('pm', '晚上') + '</div>' +
          '<div class="symacts">' + sym('vomit', '嘔吐') + sym('pant', '喘氣') + '</div>';
 }
 
@@ -832,6 +985,13 @@ function renderToday() {
   document.getElementById('today').innerHTML =
     '<div class="today-head"><span class="today-title">今天</span>' +
     '<span class="today-date">' + dateLabel(key) + '</span></div>' + dayControls(key);
+
+  // 標題：今日進度 + 頭像表情（兩餐都餵完 → 眼睛瞇起來）
+  var rec = records[key] || {};
+  var n   = (rec.am ? 1 : 0) + (rec.pm ? 1 : 0);
+  document.getElementById('headerSub').textContent =
+    n === 2 ? '今天都餵好了 ✓' : n === 1 ? '今天已餵 1 / 2' : '今天還沒餵藥';
+  document.getElementById('avatar').innerHTML = tabbyAvatar(n === 2);
 }
 
 function renderAll() {
@@ -855,10 +1015,26 @@ function goToday() {
 }
 
 // ── 某一天的面板 ──────────────────────────────────────────────────────────────
+// 面板開關：背景設為 inert（鍵盤與讀屏都進不去）、焦點移進面板、提示條改放上方
+function showSheet(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.classList.add('sheet-open');
+  document.querySelector('.wrap').inert = true;
+  document.querySelector('#' + id + ' .sheet').focus({ preventScroll: true });
+}
+
+function hideSheet(id) {
+  document.getElementById(id).classList.remove('open');
+  if (!document.querySelector('.overlay.open')) {
+    document.body.classList.remove('sheet-open');
+    document.querySelector('.wrap').inert = false;
+  }
+}
+
 function openDay(key) {
   openDayKey = key;
   renderDay();
-  document.getElementById('dayOverlay').classList.add('open');
+  showSheet('dayOverlay');
 }
 
 function renderDay() {
@@ -867,8 +1043,13 @@ function renderDay() {
 }
 
 function closeDay() {
+  var key = openDayKey;
+  if (!key) return;
   openDayKey = null;
-  document.getElementById('dayOverlay').classList.remove('open');
+  hideSheet('dayOverlay');
+  // 格子在記錄時被重畫過，用日期找回同一格，把焦點還給鍵盤使用者
+  var cell = document.querySelector('.cell[data-key="' + key + '"]');
+  if (cell) cell.focus({ preventScroll: true });
 }
 
 function dayBg(e) {
@@ -1017,7 +1198,7 @@ function syncFailMessage(e) {
 }
 
 async function syncAll() {
-  if (!scriptUrl) { setStatus('尚未設定同步網址'); return; }
+  if (!scriptUrl) { setStatus(NO_SYNC); return; }
   if (pushCount > 0) { setStatus('寫入中，完成後自動同步…', 'busy'); return; }
   if (syncing) { syncAgain = true; return; }   // 同步進行中又被要求同步 → 結束後再跑一次
   syncing = true;
@@ -1117,14 +1298,20 @@ async function doPush(key, period, value) {
 }
 
 // ── Setup sheet ───────────────────────────────────────────────────────────────
+var setupOpener = null;
+
 function openSetup() {
+  setupOpener = document.activeElement;
   document.getElementById('inputName').value = catName;
   document.getElementById('inputUrl').value  = scriptUrl;
-  document.getElementById('overlay').classList.add('open');
+  showSheet('overlay');
 }
 
 function closeSetup() {
-  document.getElementById('overlay').classList.remove('open');
+  if (!document.getElementById('overlay').classList.contains('open')) return;
+  hideSheet('overlay');
+  if (setupOpener && document.contains(setupOpener)) setupOpener.focus({ preventScroll: true });
+  setupOpener = null;
 }
 
 function overlayBg(e) {
@@ -1150,7 +1337,7 @@ function saveSetup() {
   if (scriptUrl) {
     syncAll();
   } else {
-    setStatus('尚未設定同步網址');
+    setStatus(NO_SYNC);
   }
 }
 
@@ -1160,14 +1347,19 @@ function saveSetup() {
   curYear  = now.getFullYear();
   curMonth = now.getMonth();
 
+  // 每份資料各自讀取：紀錄檔壞掉時，同步網址與名字仍要保留（不然這次開啟期間的紀錄會沒有同步通道）
+  function loadObject(key) {
+    try {
+      var v = JSON.parse(localStorage.getItem(key) || '{}');
+      return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+    } catch(e) { return {}; }
+  }
+  records = loadObject('catMedRec');
+  pending = loadObject('catMedPending');
   try {
-    var saved = localStorage.getItem('catMedRec');
-    records   = saved ? JSON.parse(saved) : {};
     catName   = localStorage.getItem('catMedName') || '小貓咪';
     scriptUrl = localStorage.getItem('catMedUrl')  || '';
-    var savedPending = localStorage.getItem('catMedPending');
-    pending = savedPending ? JSON.parse(savedPending) : {};
-  } catch(e) { records = {}; pending = {}; }
+  } catch(e) {}
 
   document.getElementById('catNameText').textContent = catName;
   renderAll();

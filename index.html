@@ -126,7 +126,6 @@
       transition: opacity 0.15s;
     }
 
-    .cat-name:hover { opacity: 0.65; }
 
     /* 今日進度：打開 App 的第一句話 */
     .header-sub {
@@ -161,7 +160,6 @@
       transition: background 0.15s, color 0.15s;
       line-height: 1;
     }
-    .nav-btn:hover { background: var(--border); color: var(--text); }
 
     .month-center { text-align: center; }
 
@@ -293,7 +291,6 @@
       cursor: pointer;
       transition: border-color 0.15s;
     }
-    .cell:hover { border-color: var(--hover-border); }
 
     .cell.empty {
       background: transparent;
@@ -469,6 +466,7 @@
     /* 點擊區 44×44；外觀仍是 30px 的小圈（畫在 ::before） */
     .refresh-btn {
       position: relative;
+      z-index: 0;   /* 自成一層，讓圓圈(::before)能放到箭頭後面 */
       width: 44px; height: 44px;
       border: none;
       background: none;
@@ -481,13 +479,12 @@
     .refresh-btn::before {
       content: "";
       position: absolute;
+      z-index: -1;   /* 在 ↻ 後面：圓圈變實心時，箭頭不會被蓋住 */
       inset: 7px;
       border: 1.5px solid var(--border);
       border-radius: 50%;
       transition: background 0.15s;
     }
-    .refresh-btn:hover { color: var(--text); }
-    .refresh-btn:hover::before { background: var(--border); }
     .refresh-btn.spinning { animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -504,7 +501,6 @@
       transition: background 0.15s, color 0.15s;
       font-family: inherit;
     }
-    .setup-btn:hover { background: var(--border); color: var(--text); }
 
     /* ── Overlay / bottom sheet ── */
     .overlay {
@@ -647,7 +643,6 @@
       cursor: pointer;
       transition: background 0.15s;
     }
-    .btn-cancel:hover { background: var(--btn-hover); }
     .btn-save {
       flex: 2;
       background: var(--accent-strong);
@@ -661,7 +656,6 @@
       cursor: pointer;
       transition: opacity 0.15s;
     }
-    .btn-save:hover { opacity: 0.88; }
 
     /* ── Toast（記錄後的回饋＋復原） ── */
     .toast {
@@ -701,6 +695,83 @@
       padding: 8px 10px;
       cursor: pointer;
     }
+
+    /* ── 新版提示條：常駐，直到更新或按「稍後」 ── */
+    .update-bar {
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: calc(100% - 28px);
+      display: none;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 4px 4px 16px;
+      background: var(--toast-bg);
+      color: var(--toast-fg);
+      border-radius: 14px;
+      font-size: 13.5px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+      z-index: 70;
+    }
+    .update-bar.show { display: flex; }
+    .update-bar button {
+      min-height: 44px;
+      padding: 0 14px;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    #updateGo { background: var(--accent-strong); color: var(--on-accent); }
+    #updateGo:disabled { opacity: 0.7; cursor: default; }
+    .update-bar .later { background: none; color: var(--toast-fg); font-weight: 600; opacity: 0.85; }
+    body.has-update.sheet-open .toast { top: 76px; }   /* 兩個都在上方時，提示條讓出位置 */
+
+    .version-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .link-btn {
+      min-height: 44px;
+      padding: 0 4px;
+      background: none;
+      border: none;
+      color: var(--accent-strong);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .link-btn:disabled { opacity: 0.6; cursor: default; }
+    .version-note { min-height: 1.3em; margin-top: -8px; font-size: 12px; color: var(--muted); text-align: right; }
+
+    /* ── 懸停與按下的回饋 ──
+       手機沒有滑鼠，點一下之後系統會把「:hover」一直留著（畫面上就會卡著實心圓、卡著底色）。
+       所以懸停效果只在「真的有滑鼠」的裝置上才生效；手機改成「按下去的瞬間」才有回饋。 */
+    @media (hover: hover) {
+      .cat-name:hover { opacity: 0.65; }
+      .nav-btn:hover { background: var(--border); color: var(--text); }
+      .cell:hover { border-color: var(--hover-border); }
+      .refresh-btn:hover { color: var(--text); }
+      .refresh-btn:hover::before { background: var(--border); }
+      .setup-btn:hover { background: var(--border); color: var(--text); }
+      .btn-cancel:hover { background: var(--btn-hover); }
+      .btn-save:hover { opacity: 0.88; }
+    }
+    .nav-btn:active { background: var(--border); color: var(--text); }
+    .refresh-btn:active::before { background: var(--border); }
+    .setup-btn:active { background: var(--border); color: var(--text); }
+    .btn-cancel:active { background: var(--btn-hover); }
+    .btn-save:active { opacity: 0.88; }
 
     @media (prefers-reduced-motion: reduce) {
       * { transition: none !important; animation: none !important; }
@@ -769,6 +840,12 @@
   </div>
 </div>
 
+<div class="update-bar" id="updateBar" role="status" aria-live="polite">
+  <span id="updateMsg">有新版本</span>
+  <button id="updateGo" onclick="applyUpdate()">更新</button>
+  <button class="later" onclick="dismissUpdate()">稍後</button>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite">
   <span id="toastMsg"></span>
   <button id="toastUndo" onclick="undoLast()">復原</button>
@@ -804,10 +881,46 @@
       <button class="btn-cancel" onclick="closeSetup()">取消</button>
       <button class="btn-save" onclick="saveSetup()">儲存</button>
     </div>
+
+    <div class="version-row">
+      <span id="versionText">版本 —</span>
+      <button class="link-btn" id="checkUpdateBtn" onclick="manualCheck()">檢查更新</button>
+    </div>
+    <div class="version-note" id="versionNote" role="status" aria-live="polite"></div>
   </div>
 </div>
 
 <script>
+// ── 這一版的指紋 ──────────────────────────────────────────────────────────────
+// 必須是整段程式的第一件事：此時畫面還沒被 JS 改動，抓到的是「檔案原貌」。
+// 指紋 = 程式碼 + 樣式 + 靜態畫面結構。之後拿網站上最新的網頁算同樣的指紋，不同就代表有新版，
+// 所以不需要手動維護版本號。
+function pageParts(doc, scriptEl) {
+  var body = doc.body.cloneNode(true);
+  var ss = body.querySelectorAll('script');
+  for (var i = 0; i < ss.length; i++) ss[i].parentNode.removeChild(ss[i]);
+  var style = doc.querySelector('style');
+  return [
+    scriptEl ? scriptEl.textContent : '',
+    style ? style.textContent : '',
+    body.innerHTML.replace(/\s+/g, ' ').trim()
+  ].join('\u0000');
+}
+
+function hashString(str) {   // cyrb53
+  var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (var i = 0, ch; i < str.length; i++) {
+    ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+
+var MY_FP = hashString(pageParts(document, document.currentScript));
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 var PERIOD_LABEL = { am: '早上餵藥', pm: '晚上餵藥', vomit: '嘔吐', pant: '喘氣' };
 var WEEKDAYS     = ['日','一','二','三','四','五','六'];
@@ -1300,6 +1413,8 @@ function openSetup() {
   setupOpener = document.activeElement;
   document.getElementById('inputName').value = catName;
   document.getElementById('inputUrl').value  = scriptUrl;
+  document.getElementById('versionText').textContent = versionLabel();
+  document.getElementById('versionNote').textContent = '';
   showSheet('overlay');
 }
 
@@ -1337,6 +1452,77 @@ function saveSetup() {
   }
 }
 
+// ── 自動檢查新版 ──────────────────────────────────────────────────────────────
+var updateState = { lastCheck: 0, latestFp: null, dismissedFp: null };
+
+function showUpdateBar() {
+  var go = document.getElementById('updateGo');
+  go.disabled = false; go.textContent = '更新';
+  document.getElementById('updateBar').classList.add('show');
+  document.body.classList.add('has-update');
+}
+
+function hideUpdateBar() {
+  document.getElementById('updateBar').classList.remove('show');
+  document.body.classList.remove('has-update');
+}
+
+function dismissUpdate() {
+  updateState.dismissedFp = updateState.latestFp;   // 這一版不再提醒；更新的版本出現時會再提醒
+  hideUpdateBar();
+}
+
+// 回傳 'same' | 'new' | 'error' | 'skipped'。沒網路或網站打不開時安靜失敗，不打擾使用者。
+async function checkForUpdate(manual) {
+  if (location.protocol === 'file:') return 'error';   // 直接雙擊開啟本機檔案時，瀏覽器不准讀取，不必嘗試
+  var now = Date.now();
+  if (!manual && now - updateState.lastCheck < 60000) return 'skipped';
+  updateState.lastCheck = now;
+  try {
+    // no-store + 網址參數：兩道保險，確保問到的是網站上「現在」的版本，不是手機存的舊檔
+    var res = await fetch(location.origin + location.pathname + '?_=' + now, { cache: 'no-store' });
+    if (!res.ok) throw new Error('http ' + res.status);
+    var doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+    if (!doc.querySelector('#today')) throw new Error('not our page');   // 例如 Wi-Fi 登入頁，不是我們的網頁
+    var fp = hashString(pageParts(doc, doc.querySelector('body script:not([src])')));
+    updateState.latestFp = fp;
+    if (fp === MY_FP) { hideUpdateBar(); return 'same'; }
+    if (manual || updateState.dismissedFp !== fp) showUpdateBar();
+    return 'new';
+  } catch (e) { return 'error'; }
+}
+
+async function applyUpdate() {
+  var go = document.getElementById('updateGo');
+  go.disabled = true; go.textContent = '更新中…';
+  var base = location.origin + location.pathname, fp = updateState.latestFp, tried = {};
+  try { tried = JSON.parse(localStorage.getItem('catMedUpdateTry') || '{}'); } catch(e) {}
+  // 先強制重抓並更新手機存的那份（含目前的網址），這樣下次從捷徑打開才不會又是舊的
+  try { await Promise.all([fetch(base, { cache: 'reload' }), fetch(location.href, { cache: 'reload' })]); } catch(e) {}
+  if (tried.fp === fp && tried.n >= 1) {   // 上一次更新後仍是舊的 → 改用帶參數的新網址，保證是新檔
+    location.replace(base + '?v=' + fp);
+    return;
+  }
+  try { localStorage.setItem('catMedUpdateTry', JSON.stringify({ fp: fp, n: 1 })); } catch(e) {}
+  location.reload();
+}
+
+function versionLabel() {
+  var d = new Date(document.lastModified);
+  if (isNaN(d.getTime())) return '版本 —';
+  return '版本 ' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+async function manualCheck() {
+  var btn = document.getElementById('checkUpdateBtn'), note = document.getElementById('versionNote');
+  btn.disabled = true; btn.textContent = '檢查中…'; note.textContent = '';
+  var r = await checkForUpdate(true);
+  btn.disabled = false; btn.textContent = '檢查更新';
+  if (r === 'same')      note.textContent = '已是最新版 ✓';
+  else if (r === 'error') note.textContent = '檢查失敗（可能沒有網路）';
+  else if (r === 'new')  closeSetup();   // 關掉設定，讓上方的更新條露出來
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 (function init() {
   var now = new Date();
@@ -1367,9 +1553,15 @@ function saveSetup() {
 
   // 切回 app、或網路恢復時自動同步（同時會補上傳先前沒送成功的紀錄）
   document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible' && scriptUrl) syncAll();
+    if (document.visibilityState !== 'visible') return;
+    if (scriptUrl) syncAll();
+    checkForUpdate();
   });
-  window.addEventListener('online', function() { if (scriptUrl) syncAll(); });
+  window.addEventListener('online', function() { if (scriptUrl) syncAll(); checkForUpdate(); });
+
+  // 打開後稍等一下再檢查（不跟第一次同步搶網路）；App 一直開著時，每 30 分鐘再檢查一次
+  setTimeout(function() { checkForUpdate(); }, 2500);
+  setInterval(function() { if (document.visibilityState === 'visible') checkForUpdate(); }, 30 * 60 * 1000);
 
   // Esc 關閉面板
   document.addEventListener('keydown', function(e) {
